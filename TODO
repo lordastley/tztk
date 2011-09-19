@@ -8,3 +8,4 @@
 [X] add -uptime command
 [ ] add -tp-on -tp-off commands (to allow/disallow others to tp to you)
 [X] highlight player conversation
+[ ] fix -wp login packets (broken since Beta 1.5)

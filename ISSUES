@@ -34,4 +34,6 @@ Cause: $irc issue
 
 
 
+== Potential uninitialized value when using -mode ==
 
+Solution: Stop being lazy and code a default value.
