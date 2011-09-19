@@ -14,7 +14,7 @@ use IO::Uncompress::Gunzip qw(gunzip);
 use IO::Compress::Gzip qw(gzip);
 use LWP::UserAgent;
 
-my $protocol_version = 9;
+my $protocol_version = 17;
 my $client_version = 99;
 my $server_memory = "1024M";
 
@@ -28,7 +28,8 @@ my %packet; %packet = (
     chr(0x00);
   },
   cs_login => sub { #(user, pass)
-    chr(0x01) . $packet{cs_long}($protocol_version)  . $packet{cs_string}($_[0]) . $packet{cs_string}($_[1]) . ("\0" x 9);
+    #chr(0x01) . $packet{cs_long}($protocol_version)  . $packet{cs_string}($_[0]) . $packet{cs_string}($_[1]) . ("\0" x 9); #old version.
+    chr(0x01) . $packet{cs_long}($protocol_version)  . $packet{cs_string}($_[0])  . ("\0" x 16); #This might be right post beta 1.4. Probably need to modify total length. CURRENTLY BROKEN! -t9 9/15/11
   },
   cs_disconnect => sub { #(reason)
     chr(0xff) . $packet{cs_string}($_[0]);
@@ -137,6 +138,7 @@ if (-d "$tztk_dir/irc") {
 my $server_pid = 0;
 $SIG{PIPE} = sub { print color(error => "SIGPIPE (\$?=$?, k0=".(kill 0 => $server_pid).", \$!=$!)\n"); };
 $server_pid = open2(\*MCOUT, \*MCIN, "java -Xmx$server_memory -Xms$server_memory -jar minecraft_server.jar nogui 2>&1");
+#$server_pid = open2(\*MCOUT, \*MCIN, "java -server -XX:+UseConcMarkSweepGC -XX:ParallelGCThreads=8 -XX:+UseAdaptiveGCBoundary -XX:-UseGCOverheadLimit -XX:SurvivorRatio=16 -Xnoclassgc -XX:UseSSE=3 -Xmx$server_memory -Xms$server_memory -jar minecraft_server.jar nogui 2>&1"); #personal modifications.
 print "Minecraft SMP Server launched with pid $server_pid\n";
 
 my (@players, %payments_pending, $want_list);
@@ -317,7 +319,7 @@ while (kill 0 => $server_pid) {
           console_exec(tell => $cmd_user => "You have $paid more use".($paid==1 ? "" : "s")." of -$cmd_name remaining.");
         }
 
-        if ($cmd_name eq 'create' && $cmd_args =~ /^(\d+)(?:\s*\D+?\s*(\d+))?|([a-z][\w\-]*)$/) {
+        if (($cmd_name eq 'create' || $cmd_name eq 'c') && $cmd_args =~ /^(\d+)(?:\s*\D+?\s*(\d+))?|([a-z][\w\-]*)$/) { #now with optional alias -c
           my ($id, $count, $kit) = ($1, $2||1, lc $3);
           my @create;
           if ($kit) {
@@ -376,6 +378,8 @@ while (kill 0 => $server_pid) {
           show_uptime();
         } elsif ($cmd_name eq 'help') {
           show_help();
+	} elsif($cmd_name eq 'mode' && $cmd_args =~ /^(\d)$/) { #lemme try hacking in the new gamemode command from 1.8. It works, but needs a default value. -t9
+	  console_exec(gamemode => $cmd_user, $1); 
         } elsif ($cmd_name eq 'home') {
           do_wp( $cmd_user, $cmd_user );
         } elsif ($cmd_name eq 'sethome') {
@@ -385,6 +389,7 @@ while (kill 0 => $server_pid) {
         } elsif ($cmd_name eq 'setspawn') {
           do_wpset( $cmd_user, 'spawn' );
         } elsif ($cmd_name eq 'buy' && $cmd_args =~ /^([\w\-]+)(?:\s+(\d+))$/) {
+#(?:\s*\D+?\s*(\d+))$/) { #no idea what this regexp is doing here. gonna commit it then remove it. -t9
           my ($item, $amount) = ($1, $2||1);
           if (!-d "$tztk_dir/payment/$item/cost") {
             console_exec(tell => $cmd_user => "That item is not for sale!");
@@ -572,6 +577,7 @@ sub mcauth_startsession {
 }
 
 sub mcauth_joinserver {
+# this method's a bit outdated. See http://wiki.vg/Authentication for the new hotness.
   return http('www.minecraft.net', '/game/joinserver.jsp?user='.urlenc($_[0]).'&sessionId='.urlenc($_[1]).'&serverId='.urlenc($_[2]));
 }
 
@@ -888,16 +894,20 @@ sub show_help {
   console_exec( say => ":: HELP:" );
   console_exec( say => ": -help -- This help message" );
   console_exec( say => ": -list -- List online users" ) if command_allowed('list');
-  console_exec( say => ": -last -- List users last login time and hours played" ) if command_allowed('last');
+#  console_exec( say => ": -last -- List users last login time and hours played" ) if command_allowed('last');
   console_exec( say => ": -tp [user] -- Teleport to user" ) if command_allowed('tp');
-  console_exec( say => ": -tp-on -- Allow users to teleport to you" ) if command_allowed('tp-on');
-  console_exec( say => ": -tp-off -- Disallow users to teleport to you" ) if command_allowed('tp-off');
+#  console_exec( say => ": -tp-on -- Allow users to teleport to you" ) if command_allowed('tp-on');
+#  console_exec( say => ": -tp-off -- Disallow users to teleport to you" ) if command_allowed('tp-off');
+  console_exec( say => ": -mode [0|1] -- Change mode to Survival | Creative" ) if command_allowed('mode');
   console_exec( say => ": -spawn -- Warp to spawn point" ) if command_allowed('spawn');
   console_exec( say => ": -home -- Warp to user's 'sethome' location" ) if command_allowed('home');
   console_exec( say => ": -sethome -- Set current location as user's home" ) if command_allowed('sethome');
   console_exec( say => ": -wp-list -- List way points" ) if command_allowed('wp-list');
   console_exec( say => ": -wp-set [wp] -- Set current location as a waypoint" ) if command_allowed('wp-set');
   console_exec( say => ": -wp [wp] -- Jump to way point" ) if command_allowed('wp');
+  console_exec( say => ": -buy [cmd] [# uses] -- Buy usage(s) of a command" ) if command_allowed('buy');
+  console_exec( say => ": -buy-list -- List 'pay' cmds w/ price in item ids" ) if command_allowed('bank-list');
+  console_exec( say => ": -bank-list -- List your purchased commands" ) if command_allowed('bank-list');
 }
 
 sub do_wp {
