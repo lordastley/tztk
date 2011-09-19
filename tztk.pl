@@ -389,7 +389,6 @@ while (kill 0 => $server_pid) {
         } elsif ($cmd_name eq 'setspawn') {
           do_wpset( $cmd_user, 'spawn' );
         } elsif ($cmd_name eq 'buy' && $cmd_args =~ /^([\w\-]+)(?:\s+(\d+))$/) {
-#(?:\s*\D+?\s*(\d+))$/) { #no idea what this regexp is doing here. gonna commit it then remove it. -t9
           my ($item, $amount) = ($1, $2||1);
           if (!-d "$tztk_dir/payment/$item/cost") {
             console_exec(tell => $cmd_user => "That item is not for sale!");
