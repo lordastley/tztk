@@ -4,8 +4,13 @@
 [X] add -spawn wp command
 [X] add -home and -sethome commands (personal waypoints)
 [X] move topaz files into tztk folder
-[ ] add -last command (show players last login and time played)
+[X] add -last command (show players last login and time played)
 [X] add -uptime command
-[ ] add -tp-on -tp-off commands (to allow/disallow others to tp to you)
+[X] add -tp-on -tp-off commands (to allow/disallow others to tp to you)
 [X] highlight player conversation
-[ ] fix -wp login packets (broken since Beta 1.5)
+[ ] modify create command to allow for damage values on items (colored wool, etc)
+[ ] add whitelist for -mode to prevent casual server griefing
+[ ] wrap other server commands, maybe
+    [ ] xp
+    [ ] toggledownfall
+    [ ] time
