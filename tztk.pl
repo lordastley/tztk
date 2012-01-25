@@ -1270,7 +1270,7 @@ sub kiloforce_player_online {
 sub lordastley_mode {
     my ($username, $mode) = @_;
     if ($mode =~ /^(\d)$/) {
-        console_exec(gamemode => $cmd_user, $1);
+        console_exec(gamemode => $username, $1);
     } else {
         console_exec(tell => $username => "Invalid gamemode!");
     }
