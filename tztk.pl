@@ -17,7 +17,7 @@ use IO::Compress::Gzip qw(gzip);
 use LWP::UserAgent;
 use Encode;
 
-my $protocol_version = 0x17;
+my $protocol_version = 0x1C;
 my $client_version = 99;
 my $server_memory = "1024M";
 
